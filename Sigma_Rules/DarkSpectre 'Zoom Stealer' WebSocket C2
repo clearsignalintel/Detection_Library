@@ -1,0 +1,48 @@
+title: DarkSpectre 'Zoom Stealer' WebSocket C2
+id: f0253d48-2c9c-4645-bf14-2ed5c9c247de
+status: experimental
+description:
+  Detects WebSocket connections to command and control (C2) infrastructure
+  associated with the DarkSpectre 'Zoom Stealer' campaign. This campaign uses
+  malicious browser extensions to exfiltrate corporate meeting intelligence in
+  real-time via WebSockets.
+references:
+  - https://www.koi.ai/blog/darkspectre-unmasking-the-threat-actor-behind-7-8-million-infected-browsers
+  - https://www.blackhat.com/docs/us-16/materials/us-16-Hossain-The-Web-Socket-Protocol-As-A-New-Covert-Channel-In-The-Browser.pdf
+date: 2026-01-19
+author: clearsignalintel
+tags:
+  - attack.command_and_control
+  - attack.t1071.001
+  - attack.exfiltration
+  - attack.t1041
+logsource:
+  category: proxy
+detection:
+  # Detects the use of the WebSocket protocol via a dedicated protocol field
+  selection_protocol_field:
+    protocol:
+      - 'WebSocket'
+      - 'WebSocket SSL'
+  # Detects the use of the WebSocket protocol via scheme
+  selection_protocol_scheme:
+    Scheme:
+      - 'ws'
+      - 'wss'
+  # Fallback detection for WebSocket via URL prefix
+  selection_protocol_fallback:
+    Url|startswith:
+      - 'ws://'
+      - 'wss://'
+  # Detects connections to known DarkSpectre 'Zoom Stealer' C2 domains
+  selection_c2:
+    Url|contains:
+      - 'meettimerserver-dot-zoocorder.uc.r.appspot.com' # C2 from code snippet
+      - 'meetingtv.us'
+      - 'webinarstvus.cloudfunctions.net'
+      - 'zoocorder.firebaseio.com'
+  condition: (1 of selection_protocol_*) and selection_c2
+falsepositives:
+  - This rule is highly specific to the DarkSpectre campaign's infrastructure.
+    False positives are considered highly unlikely.
+level: high
